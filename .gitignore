@@ -1,0 +1,31 @@
+# === Node & React ===
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.DS_Store
+*.log
+
+# === Python & Flask ===
+backend/venv/
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+backend/.DS_Store
+backend/.env
+
+# === General ===
+.env
+*.log
+__pycache__/
+*.py[cod]
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# === System files ===
+.DS_Store
+Thumbs.db
