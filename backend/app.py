@@ -13,8 +13,6 @@ db.init_app(app)
 app.config.from_object(Config)
 CORS(app)
 
-db.init_app(app)
-
 with app.app_context():
     db.create_all()  # creates loans.db if not exists
 
