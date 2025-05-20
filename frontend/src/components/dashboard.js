@@ -27,12 +27,12 @@ function Dashboard() {
 
   // 🌐 Fetch all loans from Flask backend
     useEffect(() => {
-        fetch('http://localhost:5000/api/loans')
+        fetch('https://loantracker-backend.onrender.com/api/loans')
           .then(res => res.json())
           .then(data => setLoans(data))
           .catch(err => console.error('Error fetching loans:', err));
         
-        fetch('http://localhost:5000/api/stats')
+        fetch('https://loantracker-backend.onrender.com/api/stats')
           .then(res => res.json())
           .then(data => setStats(data))
           .catch(err => console.error('Error fetching stats:', err));
@@ -56,7 +56,7 @@ function Dashboard() {
         email: formData.get('email'),
         status: 'Pending' // you can make this dynamic later
     };
-    fetch('http://localhost:5000/api/loan', {
+    fetch('https://loantracker-backend.onrender.com/api/loan', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -74,7 +74,7 @@ function Dashboard() {
         const newEntry = `${newLoan.name} registered for ₦${newLoan.amount} due on ${newLoan.due} at an interest of $${newLoan.interest}%`;
         setRecentActivity(prev => [newEntry, ...prev]);
 
-        fetch('http://localhost:5000/api/stats')
+        fetch('https://loantracker-backend.onrender.com/api/stats')
           .then(res => res.json())
           .then(updatedStats => setStats(updatedStats))
           .catch(err => console.error('Failed to update stats:', err));
@@ -90,7 +90,7 @@ function Dashboard() {
 
     const handleExport = () => {
         const link = document.createElement('a');
-        link.href = 'http://localhost:5000/api/export';
+        link.href = 'https://loantracker-backend.onrender.com/api/export';
         link.setAttribute('download', 'loan_export.csv');
         document.body.appendChild(link);
         link.click();
