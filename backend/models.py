@@ -15,6 +15,7 @@ class Loan(db.Model):
     email = db.Column(db.String(120))
     duration = db.Column(db.Integer)
     status = db.Column(db.String(50), default='Pending')
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable =False)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -12,7 +12,7 @@ function Register() {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    fetch('https://loantracker-backend.onrender.com/api/register', {
+    fetch('http://localhost:5000/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -23,19 +23,22 @@ function Register() {
         email
       })
     })
-      .then(res => {
+      .then(async res => {
+        const data = await res.json();
         if (res.ok) {
           alert('Account created!');
           navigate('/login');
         } else {
-          return res.json().then(data => {
-            alert(data.message || 'Registration failed');
-          });
+          console.error('Registration error:', res.status, data.message);
+          alert(data.message || 'Registration failed');
         }
       })
-      .catch(err => console.error('Registration error:', err));
-  };
-
+      .catch(err => {
+        console.error('Network error:', err);
+        alert('Registration failed. Network issue.');
+      });
+    }
+    
   return (
     <div className="login-container">
       <div className="login-card">

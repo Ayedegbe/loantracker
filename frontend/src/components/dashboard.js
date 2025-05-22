@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'
 import './dashboard.css';
+import jwt_decode from 'jwt-decode';
 
 
 
@@ -8,6 +9,7 @@ function Dashboard() {
     const [loans, setLoans] = useState([])
     const [showForm, setShowForm] = useState(false);
     const [recentActivity, setRecentActivity] = useState([]);
+    const [username, setUserName] = useState('');
     const [stats, setStats] = useState({
       totalClients: 0,
       activeLoans: 0,
@@ -16,24 +18,50 @@ function Dashboard() {
       totalAmount: 0
     });
     
-    
+    const token = localStorage.getItem('token');
     const navigate = useNavigate();
     
     useEffect(() => {
-        if (!localStorage.getItem('loggedIn')) {
-            navigate('/login');
+        if(!token) {
+            navigate('/');
     }
-  }, []);
+        else {
+          fetch('http://localhost:5000/api/user', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+            .then(res => res.json())
+            .then(data => {
+              console.log("User API response:", data);
+              setUserName(data.name.split(" ")[0] || 'User');
+            })
+            .catch(err => console.error('Error fetching user info:', err));
+        }
+  }, [navigate]);
 
   // 🌐 Fetch all loans from Flask backend
     useEffect(() => {
-        fetch('https://loantracker-backend.onrender.com/api/loans')
+        const token = localStorage.getItem('token');
+
+        fetch('http://localhost:5000/api/loans', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
           .then(res => res.json())
           .then(data => setLoans(data))
           .catch(err => console.error('Error fetching loans:', err));
         
-        fetch('https://loantracker-backend.onrender.com/api/stats')
-          .then(res => res.json())
+        fetch('http://localhost:5000/api/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error("Failed to fetch stats");
+            return res.json(); 
+          })
           .then(data => setStats(data))
           .catch(err => console.error('Error fetching stats:', err));
     }, []);
@@ -43,38 +71,51 @@ function Dashboard() {
     };
 
     const handleSubmitLoan = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
+      e.preventDefault();
+      const token = localStorage.getItem('token');
+      const formData = new FormData(e.target);
 
-    const newLoan = {
-        name: formData.get('name'),
-        amount: parseFloat(formData.get('amount')),
-        due: formData.get('due'),
-        interest: formData.get('interest'),
-        duration: formData.get('duration'),
-        phone: formData.get('phonenumber'),
-        email: formData.get('email'),
-        status: 'Pending' // you can make this dynamic later
-    };
-    fetch('https://loantracker-backend.onrender.com/api/loan', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newLoan)
+      const newLoan = {
+          name: formData.get('name'),
+          amount: parseFloat(formData.get('amount')),
+          due: formData.get('due'),
+          interest: formData.get('interest'),
+          duration: formData.get('duration'),
+          phone: formData.get('phonenumber'),
+          email: formData.get('email'),
+          status: 'Pending' // you can make this dynamic later
+      };
+      fetch('http://localhost:5000/api/loan', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(newLoan)
+      })
+    .then(res => {
+      if (!res.ok) throw new Error("Loan submission failed");
+      return res.json();
     })
-    .then(res => res.json())
     .then(data => {
         console.log('response:', data);
     
     // Store new loan in loans array
-        setLoans(prevLoans => [newLoan, ...prevLoans]);
-
+      fetch('http://localhost:5000/api/loans', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+          .then(res => res.json())
+          .then(updatedLoans => setLoans(updatedLoans))
+          .catch(err => console.error('Error refreshing loans:', err));
             
         const newEntry = `${newLoan.name} registered for ₦${newLoan.amount} due on ${newLoan.due} at an interest of $${newLoan.interest}%`;
         setRecentActivity(prev => [newEntry, ...prev]);
 
-        fetch('https://loantracker-backend.onrender.com/api/stats')
+        fetch('http://localhost:5000/api/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
           .then(res => res.json())
           .then(updatedStats => setStats(updatedStats))
           .catch(err => console.error('Failed to update stats:', err));
@@ -90,7 +131,7 @@ function Dashboard() {
 
     const handleExport = () => {
         const link = document.createElement('a');
-        link.href = 'https://loantracker-backend.onrender.com/api/export';
+        link.href = 'http://localhost:5000/api/export';
         link.setAttribute('download', 'loan_export.csv');
         document.body.appendChild(link);
         link.click();
@@ -98,13 +139,26 @@ function Dashboard() {
 };
 
     const handleLogout = () => {
-        localStorage.removeItem('loggedIn');
-        navigate('/login');
-};
+    const confirmLogout = window.confirm('Are you sure you want to logout?');
+    if (confirmLogout) {
+      localStorage.clear(); // clears all localStorage
+      setLoans([]);
+      setStats({
+        totalClients: 0,
+        activeLoans: 0,
+        upcomingDue: 0,
+        overdue: 0,
+        totalAmount: 0
+      });
+      setUserName('');
+      navigate('/');
+    }
+  };
+
     return (
     <div className="dashboard">
       <header className="dashboard-header">
-        <h2>Welcome, Daniel</h2>
+        <h2>Welcome, {username || 'User'}</h2>
         <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </header>
 
@@ -175,7 +229,7 @@ function Dashboard() {
             </tr>
           </thead>
           <tbody>
-             {loans.map((loan, index) => (
+             {Array.isArray(loans) && loans.map((loan, index) => (
           <tr key={index}>
             <td>{loan.name}</td>
             <td>₦{loan.amount}</td>

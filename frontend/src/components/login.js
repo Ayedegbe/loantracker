@@ -7,18 +7,32 @@ function Login() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (localStorage.getItem('loggedIn') === 'true') {
+      navigate('/dashboard');
+    }
+  }, []);
+
   const handleLogin = (e) => {
     e.preventDefault();
     // TODO: Connect to backend login route
     
-   fetch('https://loantracker-backend.onrender.com/api/login', {
+   fetch('http://localhost:5000/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ identifier: username, password })
     })
       .then(async (res) => {
-        const data = await res.json();
+        const text = await res.text();
+        console.log('Raw login response:', text);
+        let data;
+        try {
+          data =JSON.parse(text);
+        } catch(e) {
+          throw new Error('Invalid JSON response from backend');
+        }
         if (res.ok) {
+          localStorage.setItem('token', data.access_token);
           localStorage.setItem('loggedIn', 'true');
           navigate('/dashboard');
         } else {

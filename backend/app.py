@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_file
+from sqlalchemy import or_
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from models import db, Loan, User
 from config import Config
 import pandas as pd
@@ -9,9 +11,12 @@ import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
-db.init_app(app)
+
+jwt = JWTManager(app)
 app.config.from_object(Config)
+db.init_app(app)
 CORS(app)
+print("Using database at:", app.config['SQLALCHEMY_DATABASE_URI'])
 
 with app.app_context():
     db.create_all()  # creates loans.db if not exists
@@ -19,16 +24,26 @@ with app.app_context():
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
-    username = data.get('username')
+    identifier = data.get('identifier')
     password = data.get('password')
-    user = User.query.filter_by(username=username).first()
+    if not identifier or not password:
+        return jsonify({'message': 'Username/email and password are required'}), 400
+
+    user = User.query.filter(
+        or_(User.username == identifier, User.email == identifier)
+    ).first()
+
     if user and user.check_password(password):
-        return jsonify({"message": "Login successful"}, 200)
-    else:
-        return jsonify({"message": "Invalid credentials"}), 401
+        token = create_access_token(identity=str(user.id))
+        return jsonify({"access_token": token}), 200
+    
+    return jsonify({"message": "Invalid credentials"}), 401
 
 @app.route('/api/loan', methods=['POST'])
+@jwt_required()
 def create_loan():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
     data = request.json
     loan = Loan(
         name=data['name'],
@@ -37,15 +52,20 @@ def create_loan():
         interest=data['interest'],
         phone=data['phone'],
         email=data['email'],
-        duration=data['duration']
+        duration=data['duration'],
+        status=data.get('status', 'Pending'),
+        user_id=user_id
     )
     db.session.add(loan)
     db.session.commit()
     return jsonify({'message': 'Loan created successfully'}), 201
 
 @app.route('/api/loans', methods=['GET'])
+@jwt_required()
 def get_loans():
     loans = Loan.query.all()
+    # loans = Loan.query.filter_by(user_id=user_id).all()
+
     loan_list = [
         {
             'id': loan.id,
@@ -62,6 +82,7 @@ def get_loans():
     return jsonify(loan_list), 200
 
 @app.route('/api/export', methods=['GET'])
+@jwt_required()
 def export_loans():
     file_path = os.path.join(os.getcwd(), 'loan_export.csv')
     loans = Loan.query.all()
@@ -82,6 +103,7 @@ def export_loans():
 
 
 @app.route('/api/stats', methods=['GET'])
+@jwt_required()
 def get_stats():
     loans = Loan.query.all()
     now = datetime.now()
@@ -102,6 +124,7 @@ def get_stats():
 
 
 @app.route('/api/register', methods=['POST'])
+# @jwt_required()
 def register():
     data = request.json
     username = data.get('username')
@@ -110,10 +133,13 @@ def register():
     phone = data.get('phone')
     email = data.get('email')
 
-    if not username or not password or not name or not phone:
+    if not all ([username, password, name, phone, email]):
         return jsonify({'message': 'All fields are required'}), 400
 
-    if User.query.filter_by(username=username).first():
+    existing_user = User.query.filter(
+        (User.email == email)
+    ).first()
+    if existing_user:
         return jsonify({'message': 'Username already exists'}), 409
 
     user = User(username=username, name=name, phone=phone, email=email)
@@ -123,7 +149,22 @@ def register():
 
     return jsonify({'message': 'Account created successfully'}), 201
 
-
+@app.route('/api/user', methods=['GET'])
+@jwt_required()
+def get_user():
+    user_id = int(get_jwt_identity())
+    user = User.query.get(user_id)
+    
+    if user:
+        return jsonify({
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'username': user.username
+        }), 200
+    else:
+        return jsonify({'message': 'User not found'}), 404
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
