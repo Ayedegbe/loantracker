@@ -26,7 +26,7 @@ function Dashboard() {
             navigate('/');
     }
         else {
-          fetch('http://localhost:5000/api/user', {
+          fetch('https://loantracker-backend.onrender.com/api/user', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -44,7 +44,7 @@ function Dashboard() {
     useEffect(() => {
         const token = localStorage.getItem('token');
 
-        fetch('http://localhost:5000/api/loans', {
+        fetch('https://loantracker-backend.onrender.com/api/loans', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -53,7 +53,7 @@ function Dashboard() {
           .then(data => setLoans(data))
           .catch(err => console.error('Error fetching loans:', err));
         
-        fetch('http://localhost:5000/api/stats', {
+        fetch('https://loantracker-backend.onrender.com/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -85,7 +85,7 @@ function Dashboard() {
           email: formData.get('email'),
           status: 'Pending' // you can make this dynamic later
       };
-      fetch('http://localhost:5000/api/loan', {
+      fetch('https://loantracker-backend.onrender.com/api/loan', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ function Dashboard() {
         console.log('response:', data);
     
     // Store new loan in loans array
-      fetch('http://localhost:5000/api/loans', {
+      fetch('https://loantracker-backend.onrender.com/api/loans', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
           .then(res => res.json())
@@ -111,7 +111,7 @@ function Dashboard() {
         const newEntry = `${newLoan.name} registered for ₦${newLoan.amount} due on ${newLoan.due} at an interest of $${newLoan.interest}%`;
         setRecentActivity(prev => [newEntry, ...prev]);
 
-        fetch('http://localhost:5000/api/stats', {
+        fetch('https://loantracker-backend.onrender.com/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -131,7 +131,7 @@ function Dashboard() {
 
     const handleExport = () => {
         const link = document.createElement('a');
-        link.href = 'http://localhost:5000/api/export';
+        link.href = 'https://loantracker-backend.onrender.com/api/export';
         link.setAttribute('download', 'loan_export.csv');
         document.body.appendChild(link);
         link.click();
