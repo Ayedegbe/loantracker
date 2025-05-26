@@ -82,3 +82,23 @@
   text-align: left;
   border-bottom: 1px solid #eee;
 }
+
+.payment-form-container {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  margin: 1rem 0;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.payment-form-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.payment-form-container input,
+.payment-form-container select {
+  padding: 0.5rem;
+  border-radius: 4px;
+}

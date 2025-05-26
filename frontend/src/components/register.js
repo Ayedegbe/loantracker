@@ -12,7 +12,7 @@ function Register() {
 
   const handleRegister = (e) => {
     e.preventDefault();
-    fetch('https://loantracker-backend.onrender.com/api/register', {
+    fetch('http://localhost:5000/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

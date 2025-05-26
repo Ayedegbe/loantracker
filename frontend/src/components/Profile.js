@@ -11,7 +11,7 @@ function Profile() {
     if (!token) {
       navigate('/');
     } else {
-      fetch('https://loantracker-backend.onrender.com/api/user', {
+      fetch('http://localhost:5000//api/user', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

@@ -9,7 +9,12 @@ function Dashboard() {
     const [loans, setLoans] = useState([])
     const [showForm, setShowForm] = useState(false);
     const [recentActivity, setRecentActivity] = useState([]);
+    const [showPaymentForm, setShowPaymentForm] = useState(false);
+    const [selectedLoanId, setSelectedLoanId] = useState('');
+    const [paymentAmount, setPaymentAmount] = useState('');
     const [username, setUserName] = useState('');
+    const [dueLoans, setDueLoans] = useState([]);
+    const [showAllLoans, setShowAllLoans] = useState(false);
     const [stats, setStats] = useState({
       totalClients: 0,
       activeLoans: 0,
@@ -26,7 +31,7 @@ function Dashboard() {
             navigate('/');
     }
         else {
-          fetch('https://loantracker-backend.onrender.com/api/user', {
+          fetch('http://localhost:5000/api/user', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -39,12 +44,23 @@ function Dashboard() {
             .catch(err => console.error('Error fetching user info:', err));
         }
   }, [navigate]);
+    useEffect(() => {
+  const token = localStorage.getItem('token');
 
+  fetch('http://localhost:5000/api/loans/due-soon', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+    .then(res => res.json())
+    .then(data => setDueLoans(data))
+    .catch(err => console.error('Error fetching due loans:', err));
+}, []);
   // 🌐 Fetch all loans from Flask backend
     useEffect(() => {
         const token = localStorage.getItem('token');
 
-        fetch('https://loantracker-backend.onrender.com/api/loans', {
+        fetch('http://localhost:5000/api/loans', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -53,7 +69,7 @@ function Dashboard() {
           .then(data => setLoans(data))
           .catch(err => console.error('Error fetching loans:', err));
         
-        fetch('https://loantracker-backend.onrender.com/api/stats', {
+        fetch('http://localhost:5000/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -65,7 +81,20 @@ function Dashboard() {
           .then(data => setStats(data))
           .catch(err => console.error('Error fetching stats:', err));
     }, []);
-
+    const handleSendReminders = () => {
+      const token = localStorage.getItem('token');
+      fetch('http://localhost:5000/api/send-reminders', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => alert(data.message))
+        .catch(err => {
+          console.error('Failed to send reminders:', err);
+          alert('Error sending reminders.');
+        });
+  };
     const handleAddLoanClick = () => {
         setShowForm(!showForm);
     };
@@ -78,14 +107,14 @@ function Dashboard() {
       const newLoan = {
           name: formData.get('name'),
           amount: parseFloat(formData.get('amount')),
-          due: formData.get('due'),
+          // due: formData.get('due'),
           interest: formData.get('interest'),
           duration: formData.get('duration'),
           phone: formData.get('phonenumber'),
           email: formData.get('email'),
           status: 'Pending' // you can make this dynamic later
       };
-      fetch('https://loantracker-backend.onrender.com/api/loan', {
+      fetch('http://localhost:5000/api/loan', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -101,7 +130,7 @@ function Dashboard() {
         console.log('response:', data);
     
     // Store new loan in loans array
-      fetch('https://loantracker-backend.onrender.com/api/loans', {
+      fetch('http://localhost:5000/api/loans', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
           .then(res => res.json())
@@ -111,7 +140,7 @@ function Dashboard() {
         const newEntry = `${newLoan.name} registered for ₦${newLoan.amount} due on ${newLoan.due} at an interest of $${newLoan.interest}%`;
         setRecentActivity(prev => [newEntry, ...prev]);
 
-        fetch('https://loantracker-backend.onrender.com/api/stats', {
+        fetch('http://localhost:5000/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -125,13 +154,13 @@ function Dashboard() {
     })
     .catch(err => {
         console.error('Error sending data to backend:', err);
-        alert('Failed to save loan. Tryb again')
+        alert('Failed to save loan. Try again')
     });
     };
 
     const handleExport = () => {
         const link = document.createElement('a');
-        link.href = 'https://loantracker-backend.onrender.com/api/export';
+        link.href = 'http://localhost:5000/api/export';
         link.setAttribute('download', 'loan_export.csv');
         document.body.appendChild(link);
         link.click();
@@ -189,16 +218,21 @@ function Dashboard() {
         <button onClick={handleAddLoanClick}>
             {showForm ? 'Cancel' : '+ Add Loan'}
         </button>
-        <button>View All Loans</button>
-        <button>Send Reminders</button>
+        <button on onClick={()=> setShowAllLoans(prev => !prev)}>
+          {showAllLoans ? 'Hide Loans' : 'View All Loans'}</button>
+        <button onClick={handleSendReminders}>Send Reminders</button>
         <button onClick={handleExport}>Export to CSV</button>
+        <button onClick={() => setShowPaymentForm(true)}>
+          Make Payment
+        </button>
       </section>
+      
       {showForm && (
         <form className="loan-form" onSubmit={handleSubmitLoan}>
             <h3>Register New Loan</h3>
             <input type="text" name="name" placeholder="Borrower Name" required />
             <input type="number" name="amount" placeholder="Loan Amount" required />
-            <input type="date" name="due" placeholder="Due Date" required />
+            {/* <input type="date" name="due" placeholder="Due Date" required /> */}
             <input type="number" name="interest" placeholder="Interest" required />
             <input type="tel" name="phonenumber" placeholder="Phone Number" required />
             <input type="text" name="email" placeholder="E-mail" required />
@@ -206,6 +240,82 @@ function Dashboard() {
             <button type="submit"> Submit Loan</button>
         </form>
       )}
+      {showPaymentForm && (
+  <div className="payment-form-container">
+    <h3>Record a Payment</h3>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
+        fetch(`http://localhost:5000/api/payment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ loan_id: selectedLoanId, amount_paid: paymentAmount })
+        })
+          .then(res => res.json())
+          .then(data => {
+            alert(data.message || 'Payment recorded');
+            setShowPaymentForm(false);
+            setPaymentAmount('');
+            setSelectedLoanId('');
+
+            // Refresh loans and stats
+            fetch('http://localhost:5000/api/loans', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(res => res.json())
+              .then(data => setLoans(data));
+            
+
+                  // Refresh due loans
+            fetch('http://localhost:5000/api/loans/due-soon', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(res => res.json())
+              .then(data => setDueLoans(data));
+
+            fetch('http://localhost:5000/api/stats', {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+              .then(res => res.json())
+              .then(data => setStats(data));
+          })
+          .catch(err => {
+            console.error(err);
+            alert('Error recording payment');
+          });
+      }}
+    >
+      <label>Select Loaner</label>
+      <select
+        value={selectedLoanId}
+        onChange={(e) => setSelectedLoanId(e.target.value)}
+        required
+      >
+        <option value="">-- Select --</option>
+        {loans.map((loan) => (
+          <option key={loan.id} value={loan.id}>
+            {loan.name} — ₦{loan.amount} borrowed
+          </option>
+        ))}
+      </select>
+
+      <label>Payment Amount (₦)</label>
+      <input
+        type="number"
+        value={paymentAmount}
+        onChange={(e) => setPaymentAmount(e.target.value)}
+        required
+      />
+
+      <button type="submit">Submit</button>
+      <button type="button" onClick={() => setShowPaymentForm(false)}>Cancel</button>
+    </form>
+  </div>
+    )}
 
       <section className="recent-activity">
         <h3>Recent Activity</h3>
@@ -216,30 +326,66 @@ function Dashboard() {
         </ul>
 
       </section>
-
-      <section className="loan-table">
-        <h3>Loans Due This Week</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Amount</th>
-              <th>Due Date</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-             {Array.isArray(loans) && loans.map((loan, index) => (
+            {showAllLoans && (
+  <section className="loan-table">
+    <h3>All Loans</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Account Number</th>
+          <th>Original Amount</th>
+          <th>Amount Left</th>
+          <th>Interest (%)</th>
+          <th>Start Date</th>
+          <th>Due Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {loans.map((loan, index) => (
           <tr key={index}>
             <td>{loan.name}</td>
+            <td>{loan.account_number}</td>
             <td>₦{loan.amount}</td>
-            <td>{loan.due}</td>
-            <td>{loan.status}</td>
+            <td>₦{loan.amount_left}</td>
+            <td>{loan.interest}%</td>
+            <td>{loan.registered_date}</td>
+            <td>{loan.due ? new Date(loan.due).toLocaleDateString() : 'N/A'}</td>
           </tr>
         ))}
-          </tbody>
-        </table>
-      </section>
+      </tbody>
+    </table>
+  </section>
+)}
+     <section className="loan-table">
+  <h3>Loans Due This Week</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Amount Borrowed</th>
+        <th>Amount Left</th>
+        <th>Last Payment</th>
+        <th>Last Payment Date</th>
+        <th>Due Date</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {Array.isArray(dueLoans) && dueLoans.map((loan, index) => (
+        <tr key={index}>
+          <td>{loan.name}</td>
+          <td>₦{loan.original_amount || loan.amount}</td>
+          <td>₦{loan.amount_left}</td>
+          <td>₦{loan.last_payment_amount || 0}</td>
+          <td>{loan.last_payment_date ? new Date(loan.last_payment_date).toLocaleDateString() : 'N/A'}</td>
+          <td>{loan.due ? new Date(loan.due).toLocaleDateString() : 'N/A'}</td>
+          <td>{loan.status}</td>
+    </tr>
+      ))}
+    </tbody>
+  </table>
+</section>
     </div>
     ); 
 };
