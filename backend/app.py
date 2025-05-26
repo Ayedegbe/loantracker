@@ -20,6 +20,7 @@ CORS(app)
 print("Using database at:", app.config['SQLALCHEMY_DATABASE_URI'])
 
 with app.app_context():
+    db.drop_all()
     db.create_all()  # creates loans.db if not exists
 
 @app.route('/api/login', methods=['POST'])
