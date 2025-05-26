@@ -158,14 +158,35 @@ function Dashboard() {
     });
     };
 
-    const handleExport = () => {
+    const handleExport = async () => {
+      try {
         const token = localStorage.getItem('token');
-        const link = document.createElement('a');
-        link.href = 'https://loantracker-backend.onrender.com/api/export';
-        link.setAttribute('download', 'loan_export.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+
+        // 1. call the endpoint **with** the JWT header
+        const res = await fetch(
+          'https://loantracker-backend.onrender.com/api/export',
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        if (!res.ok) throw new Error('Network response was not ok');
+
+        // 2. treat the reply as a Blob
+        const blob = await res.blob();
+
+        // 3. build a temporary download link
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href      = url;
+        a.download  = 'loan_export.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('CSV export failed:', err);
+        alert('Export failed. Are you still logged-in?');
+      }
 };
 
     const handleLogout = () => {
