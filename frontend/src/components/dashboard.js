@@ -159,6 +159,8 @@ function Dashboard() {
     };
 
     const handleExport = () => {
+        e.preventDefault();
+        const token = localStorage.getItem('token');
         const link = document.createElement('a');
         link.href = 'https://loantracker-backend.onrender.com/api/export';
         link.setAttribute('download', 'loan_export.csv');
