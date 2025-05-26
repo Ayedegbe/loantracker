@@ -31,7 +31,7 @@ function Dashboard() {
             navigate('/');
     }
         else {
-          fetch('http://localhost:5000/api/user', {
+          fetch('https://loantracker-backend.onrender.com/api/user', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -47,7 +47,7 @@ function Dashboard() {
     useEffect(() => {
   const token = localStorage.getItem('token');
 
-  fetch('http://localhost:5000/api/loans/due-soon', {
+  fetch('https://loantracker-backend.onrender.com/api/loans/due-soon', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -60,7 +60,7 @@ function Dashboard() {
     useEffect(() => {
         const token = localStorage.getItem('token');
 
-        fetch('http://localhost:5000/api/loans', {
+        fetch('https://loantracker-backend.onrender.com/api/loans', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -69,7 +69,7 @@ function Dashboard() {
           .then(data => setLoans(data))
           .catch(err => console.error('Error fetching loans:', err));
         
-        fetch('http://localhost:5000/api/stats', {
+        fetch('https://loantracker-backend.onrender.com/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -83,7 +83,7 @@ function Dashboard() {
     }, []);
     const handleSendReminders = () => {
       const token = localStorage.getItem('token');
-      fetch('http://localhost:5000/api/send-reminders', {
+      fetch('https://loantracker-backend.onrender.com/api/send-reminders', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -114,7 +114,7 @@ function Dashboard() {
           email: formData.get('email'),
           status: 'Pending' // you can make this dynamic later
       };
-      fetch('http://localhost:5000/api/loan', {
+      fetch('https://loantracker-backend.onrender.com/api/loan', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ function Dashboard() {
         console.log('response:', data);
     
     // Store new loan in loans array
-      fetch('http://localhost:5000/api/loans', {
+      fetch('https://loantracker-backend.onrender.com/api/loans', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
           .then(res => res.json())
@@ -140,7 +140,7 @@ function Dashboard() {
         const newEntry = `${newLoan.name} registered for ₦${newLoan.amount} due on ${newLoan.due} at an interest of $${newLoan.interest}%`;
         setRecentActivity(prev => [newEntry, ...prev]);
 
-        fetch('http://localhost:5000/api/stats', {
+        fetch('https://loantracker-backend.onrender.com/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -160,7 +160,7 @@ function Dashboard() {
 
     const handleExport = () => {
         const link = document.createElement('a');
-        link.href = 'http://localhost:5000/api/export';
+        link.href = 'https://loantracker-backend.onrender.com/api/export';
         link.setAttribute('download', 'loan_export.csv');
         document.body.appendChild(link);
         link.click();
@@ -247,7 +247,7 @@ function Dashboard() {
       onSubmit={(e) => {
         e.preventDefault();
         const token = localStorage.getItem('token');
-        fetch(`http://localhost:5000/api/payment`, {
+        fetch(`https://loantracker-backend.onrender.com/api/payment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ function Dashboard() {
             setSelectedLoanId('');
 
             // Refresh loans and stats
-            fetch('http://localhost:5000/api/loans', {
+            fetch('https://loantracker-backend.onrender.com/api/loans', {
               headers: { 'Authorization': `Bearer ${token}` }
             })
               .then(res => res.json())
@@ -271,13 +271,13 @@ function Dashboard() {
             
 
                   // Refresh due loans
-            fetch('http://localhost:5000/api/loans/due-soon', {
+            fetch('https://loantracker-backend.onrender.com/api/loans/due-soon', {
               headers: { 'Authorization': `Bearer ${token}` }
             })
               .then(res => res.json())
               .then(data => setDueLoans(data));
 
-            fetch('http://localhost:5000/api/stats', {
+            fetch('https://loantracker-backend.onrender.com/api/stats', {
               headers: { 'Authorization': `Bearer ${token}` }
             })
               .then(res => res.json())
